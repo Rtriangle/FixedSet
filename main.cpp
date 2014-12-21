@@ -20,7 +20,6 @@ int main()
 	FixedSet OurSet(InputNumbers);
     size_t q;
     std::cin >> q;
-    std::vector<bool> WasInOurSet(q);
     for (size_t j = 0; j < q; ++j)
     {
         long long Tmp;
