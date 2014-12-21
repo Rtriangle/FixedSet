@@ -10,7 +10,7 @@
 std::random_device rd;
 std::mt19937 gen(rd());
 std::uniform_int_distribution<> dist(1, 1000000000);
-static const long OFFSET = 1000000000;
+static const long MinusIgnore = 1000000000;
 const long FreePlace = std::numeric_limits<long>::max();
 
 class NodeHash
@@ -19,27 +19,43 @@ private:
 	static const long P = 1000000011;
     long A, B;
 public:
-	long F(const long key) const
-	{
-		return  (static_cast<long long>(A) * (key + OFFSET) + B) % P;
-	}
-    void BuildAB()
+	void BuildAB()
     {
         A = dist(gen);
         B = dist(gen);
     }
+	long F(const long key) const
+	{
+		return  (static_cast<long long>(A) * (key + MinusIgnore) + B) % P;
+	}
 };
 
 struct HashTable
 {
 	NodeHash Hash;
-    std::vector<long> Values; 
+    std::vector<long> Elements; 
     void AddElement(long key)
 	{
-		Values[Hash.F(key) % Values.size()] = key;
+		Elements[Hash.F(key) % Elements.size()] = key;
 	};
-    bool Contains(long key) const;
+    bool Contains(long key)
+	{
+    if (Elements.size() != 0)
+        return Elements[Hash.F(key) % Elements.size()] == key;
+    else
+        return false;
+	};
 };
+
+/*
+bool HashTable::Contains(long key) const
+{
+    if (Elements.size() != 0)
+        return Elements[Hash.F(key) % Elements.size()] == key;
+    else
+        return false;
+}
+*/
 
 class FixedSet
 {
@@ -81,42 +97,32 @@ void FixedSet::BuildAB(const std::vector<long> &Input, std::vector<long> &Count)
 
 }
 
-//Constr
+//Construct our
 FixedSet::FixedSet(const std::vector<long> &Input)
 {
     std::vector<long> Count;
     BuildAB(Input, Count);
     Table.resize(Input.size());
-
-    std::vector<std::vector<long>> temp(Input.size());
-
+    std::vector<std::vector<long>> tempHash(Input.size());
     for (auto it = Input.begin(); it != Input.end(); ++it)
-    {
-        temp[Hash.F(*it) % Input.size()].push_back(*it);
-    }
-
-    for (size_t i = 0; i < temp.size(); ++i)
-    {
-        bool nocollisio = true;
-		while(!nocollisio)
+        tempHash[Hash.F(*it) % Input.size()].push_back(*it);
+	bool nocollisio;
+    for (size_t i = 0; i < tempHash.size(); ++i)
+    {  
+		do{
             Table[i].Hash.BuildAB();
-            Table[i].Values.assign(Count[i] * Count[i], FreePlace);
+            Table[i].Elements.assign(Count[i] * Count[i], FreePlace);
             nocollisio = true;
-            for (size_t k = 0; k < temp[i].size() && nocollisio; ++k)
+            for (size_t k = 0; k < tempHash[i].size() && nocollisio; ++k)
             {
-                long current_hash = Table[i].Hash.F(temp[i][k]) % Table[i].Values.size();
-                if ((Table[i].Values[current_hash] == temp[i][k]) || (Table[i].Values[current_hash] == FreePlace))
-                    Table[i].Values[current_hash] = temp[i][k];
+                long hashtmp = Table[i].Hash.F(tempHash[i][k]) % Table[i].Elements.size();
+                if (Table[i].Elements[hashtmp] == FreePlace || 
+					Table[i].Elements[hashtmp] == tempHash[i][k] )
+                    Table[i].Elements[hashtmp] = tempHash[i][k];
                 else
 					nocollisio = false;
 			}
+		}
+		while(!nocollisio);
 	}
-}
-
-bool HashTable::Contains(long key) const
-{
-    if (Values.size() != 0)
-        return Values[Hash.F(key) % Values.size()] == key;
-    else
-        return false;
 }

@@ -4,10 +4,13 @@
 #include <cstdio>
 #include <algorithm>
 #include <random>
+#include <iomanip>
 #include "FixedSet.h"
+//#pragma warning(disable : 4996) 
 
 int main()
 {
+//	freopen("input.txt","r",stdin);
     size_t n;
     std::cin >> n;
 	std::vector <long> InputNumbers;
