@@ -6,11 +6,13 @@
 #include <random>
 #include <iomanip>
 #include "FixedSet.h"
-//#pragma warning(disable : 4996) 
+#pragma warning(disable : 4996) 
 
 int main()
 {
-//	freopen("input.txt","r",stdin);
+	std::ios_base::sync_with_stdio(false);
+	freopen("test22-00001.txt","r",stdin);
+	freopen("output.txt","w",stdout);
     size_t n;
     std::cin >> n;
 	std::vector <long> InputNumbers;
