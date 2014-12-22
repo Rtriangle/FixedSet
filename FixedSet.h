@@ -4,31 +4,23 @@
 #include <iostream>
 #include <random>
 #include <limits>
-//#include "FixedSet.h"
 
 std::random_device rd;
-std::mt19937 Generator(rd());
-std::uniform_int_distribution<long> ValuesA(1, 2000000010);
+std::mt19937 gen(rd());
+std::uniform_int_distribution<long> dist(1, 2000000000);
 const long FreePlace = std::numeric_limits<long>::max();
-static const long MinusIgnore = 1000000000;
-
-/*
-static std::default_random_engine Generator;
-static std::uniform_int_distribution<long> ValuesA(1, 2000000010);
-static std::uniform_int_distribution<long> ValuesA(0, 2000000010);
-const long FreePlace = std::numeric_limits<long>::max();
-*/
+const long MinusIgnore = 1000000000;
 
 class NodeHash
 {
 private:
-    long A, B;
     static const long PRIME = 2000000011;
+	long A, B;
 public:
     void reInit()
     {
-        A = ValuesA(Generator);
-        B = ValuesA(Generator);
+        A = dist(gen);
+        B = dist(gen);
     }
     long F(const long key) const
 	{
@@ -36,18 +28,18 @@ public:
 	};
 };
 
-struct SimpleTable
+struct HashTable
 {
-    std::vector<long> Values;
-    NodeHash Hash;
-    void AddNumbers(long key)
+	NodeHash Hash;
+    std::vector<long> Elements;
+    void AddElement(long key)
 	{
-		Values[Hash.F(key) % Values.size()] = key;
+		Elements[Hash.F(key) % Elements.size()] = key;
 	};
     bool Contains(long key) const
 	{
-		if (Values.size() != 0)
-			return Values[Hash.F(key) % Values.size()] == key;
+		if (Elements.size() != 0)
+			return (Elements[Hash.F(key) % Elements.size()] == key);
 		else
 			return false;
 	};
@@ -56,86 +48,67 @@ struct SimpleTable
 class FixedSet
 {
 public:
-    explicit FixedSet(const std::vector<long> &numbers);
-    bool Contains(long number) const;
+	bool Contains(long element) const;
+    explicit FixedSet(const std::vector<long> &elements);
 private:
-    std::vector<SimpleTable> Table;
-    void generateA_B(const std::vector<long> &numbers, std::vector<long> &Count);
-    NodeHash Hash;
+    std::vector<HashTable> Table;
+	NodeHash Hash;
+    void BuildAB(const std::vector<long> &elements, std::vector<long> &Count);
 };
 
-
-bool FixedSet::Contains(long number) const
+bool FixedSet::Contains(long element) const
 {
     if (Table.size() != 0)
-        return Table[Hash.F(number) % Table.size()].Contains(number);
+        return Table[Hash.F(element) % Table.size()].Contains(element);
     else
         return false;
 }
 
-void FixedSet::generateA_B(const std::vector<long> &numbers, std::vector<long> &Count)
+void FixedSet::BuildAB(const std::vector<long> &Input, std::vector<long> &Count)
 {
-    long CollisionsCount = 0;
+    long SquareColl = 0;
     do
     {
-        Hash.reInit();
-        Count.assign(numbers.size(), 0);
-
-        for(auto number : numbers)
-        {
-            ++Count[Hash.F(number) % Count.size()];
-        }
-
-        CollisionsCount = 0;
-
-        for (auto it = Count.begin(); it != Count.end(); ++it)
-        {
-            CollisionsCount += ((long long) (*it)) * (*it);
-        }
-
+		Hash.reInit();
+		Count.assign(Input.size(), 0);
+		for(auto it = Input.begin(); it != Input.end(); ++it)
+            ++Count[Hash.F(*it) % Count.size()];
+        SquareColl = 0;
+        for (auto sizecol = Count.begin(); sizecol != Count.end(); ++sizecol)
+            SquareColl += (static_cast<long long>(*sizecol)) * (*sizecol);
     }
-	while (CollisionsCount > 4 * (numbers.size()));
-
+	while (SquareColl > 3 * (Input.size()));
 }
 
 //Construct our
-FixedSet::FixedSet(const std::vector<long> &numbers)
+FixedSet::FixedSet(const std::vector<long> &Input)
 {
     std::vector<long> Count;
-    generateA_B(numbers, Count);
-    Table.resize(numbers.size());
-
-    std::vector<std::vector<long>> temp(numbers.size());
-
-    for (auto it = numbers.begin(); it != numbers.end(); ++it)
-    {
-        temp[Hash.F(*it) % numbers.size()].push_back(*it);
-    }
-
+    BuildAB(Input, Count);
+    Table.resize(Input.size());
+    std::vector<std::vector<long>> temp(Input.size());
+    for (auto it = Input.begin(); it != Input.end(); ++it)
+        temp[Hash.F(*it) % Input.size()].push_back(*it);
     for (size_t i = 0; i < temp.size(); ++i)
     {
-        bool success;
-
+        bool nocollisio;
         do{
-
             Table[i].Hash.reInit();
-            Table[i].Values.assign(Count[i] * Count[i], FreePlace);
-            success = true;
-
-            for (size_t k = 0; k < temp[i].size(); ++k)
+            Table[i].Elements.assign(Count[i] * Count[i], FreePlace);
+            nocollisio = true;
+            for (size_t j = 0; j < temp[i].size(); ++j)
             {
-                long current_hash = Table[i].Hash.F(temp[i][k]) % Table[i].Values.size();
-                if ((Table[i].Values[current_hash] == temp[i][k]) || (Table[i].Values[current_hash] == FreePlace))
-                {
-                    Table[i].Values[current_hash] = temp[i][k];
-                }
+                long hashtmp = Table[i].Hash.F(temp[i][j]) % Table[i].Elements.size();
+                if (Table[i].Elements[hashtmp] == temp[i][j] || 
+					Table[i].Elements[hashtmp] == FreePlace)
+                    Table[i].Elements[hashtmp] = temp[i][j];
                 else
                 {
-                    success = false;
-                    continue;
+                    nocollisio = false;
+                    break;
                 }
             }
-        }while (!success);
+        }
+		while (!nocollisio);
     }
-
 }

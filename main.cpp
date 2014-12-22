@@ -11,8 +11,8 @@
 int main()
 {
 	std::ios_base::sync_with_stdio(false);
-	freopen("test22-00001.txt","r",stdin);
-	freopen("output.txt","w",stdout);
+//	freopen("test22-00001.txt","r",stdin);
+//	freopen("output.txt","w",stdout);
     size_t n;
     std::cin >> n;
 	std::vector <long> InputNumbers;
